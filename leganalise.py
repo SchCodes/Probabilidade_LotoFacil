@@ -1,0 +1,234 @@
+class analise:
+    
+    def __init__(self, data_base= 'BD_full_lotoFacil.xlsx'):
+
+        '''
+        O objeto inicialmente criado é do tipo DataFrame do pandas.
+        Como parâmetro é possível passar o data_base, que obrigatóriamente deve estar no formato ".xlsx"
+        '''
+    
+        from pandas import read_excel as pd_re
+
+        self.data_base = data_base
+
+        self.dados = pd_re(self.data_base, header= None)
+        self.dados = self.dados.drop(0)
+        #ordena os dados de forma ascendente utilizando a coluna [0] == concursos
+        self.dados = self.dados.sort_values(by=0, ascending= False)
+        self.tamanho_amostra = 10
+
+    def coletar_dados(self):
+        import os
+        import pandas as pd
+        from selenium import webdriver
+        from selenium.webdriver.chrome.service import Service
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+        from webdriver_manager.chrome import ChromeDriverManager
+        import time
+        import re
+
+        # Nome do arquivo onde os dados serão armazenados
+        arquivo_excel = self.data_base
+
+        # Verificar se o arquivo já existe
+        if os.path.exists(arquivo_excel):
+            # Carregar o arquivo existente
+            df_existente = pd.read_excel(arquivo_excel)
+            
+            # Obter o último concurso registrado
+            ultimo_concurso_registrado = df_existente['Concurso'].max()
+            print(f"Último concurso registrado: {ultimo_concurso_registrado}")
+        else:
+            # Se o arquivo não existir, inicializar um DataFrame vazio
+            df_existente = pd.DataFrame()
+            ultimo_concurso_registrado = None
+
+        # Configurar o ChromeDriver automaticamente com o webdriver_manager
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service)
+
+        # URL da Lotofácil onde os sorteios estão listados
+        url = 'https://loterias.caixa.gov.br/Paginas/Lotofacil.aspx'
+        driver.get(url)
+
+        # Espera explícita para garantir que os elementos estejam carregados
+        wait = WebDriverWait(driver, 15)
+
+        # Inicializar lista para armazenar todos os números sorteados e outros detalhes
+        todos_os_sorteios = []
+
+        while True:
+            try:
+                # Localizar o elemento do concurso e data pelo XPath relativo
+                concurso_elemento = wait.until(EC.presence_of_element_located((By.XPATH, '//span[@class="ng-binding"]')))
+                
+                # Extrair o texto (ex: "Concurso 3205 (26/09/2024)")
+                concurso_texto = concurso_elemento.text
+                
+                # Usar regex para capturar o número do concurso e a data
+                concurso_numero = re.search(r'Concurso (\d+)', concurso_texto).group(1)
+                concurso_data = re.search(r'\((\d{2}/\d{2}/\d{4})\)', concurso_texto).group(1)
+
+                print(f"Número do Concurso: {concurso_numero}")
+                print(f"Data do Concurso: {concurso_data}")
+                
+                # Verificar se o concurso já está registrado no arquivo existente
+                if int(ultimo_concurso_registrado) and int(concurso_numero) <= int(ultimo_concurso_registrado):
+                    print(f"Concurso {concurso_numero} já registrado. Finalizando a coleta.")
+                    break
+                
+                # Espera até que os números sorteados estejam presentes na página
+                elementos = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'li.dezena')))
+                
+                if elementos:
+                    # Extrair o texto (números sorteados) de cada elemento encontrado
+                    numeros_pagina = [int(elemento.text) for elemento in elementos]
+                    print(f"Números sorteados nesta página: {numeros_pagina}")
+                    
+                    # Adicionar o número do concurso, data e números sorteados à lista
+                    todos_os_sorteios.append([int(concurso_numero), concurso_data] + numeros_pagina)
+                
+                else:
+                    print("Nenhum número sorteado encontrado na página atual.")
+
+                # Espera até que o elemento de carregamento desapareça
+                wait.until(EC.invisibility_of_element((By.ID, "loading")))
+                
+                # Verifica se o botão "Anterior" está presente e clicável
+                botao_anterior = wait.until(EC.element_to_be_clickable((By.XPATH, '//a[@ng-click="carregarConcursoAnterior()"]')))
+                
+                if botao_anterior:
+                    botao_anterior.click()
+                    time.sleep(10)  # Aguarda a página carregar após o clique
+                else:
+                    print("Não há mais páginas anteriores.")
+                    break
+            
+            except Exception as e:
+                print(f"Ocorreu um erro: {e}")
+                break
+
+        # Organizar todos os sorteios novos em um DataFrame do Pandas
+        colunas = ['Concurso', 'Data'] + [f'Número_{i+1}' for i in range(15)]
+        df_novos_sorteios = pd.DataFrame(todos_os_sorteios, columns=colunas)
+
+        # Exibir o DataFrame de novos sorteios (para ver o formato)
+        # print(df_novos_sorteios)
+
+        df_novos_sorteios['Concurso'] = df_novos_sorteios['Concurso'].astype(int)
+
+        # converter os números para int
+        for i in range(1, 16):
+            df_novos_sorteios[f'Número_{i}'] = df_novos_sorteios[f'Número_{i}'].astype(int)
+
+        # Se houver novos sorteios, salvar no arquivo XLSX
+        if not df_novos_sorteios.empty:
+            # Concatenar os novos sorteios com os existentes, se houver
+            if not df_existente.empty:
+                df_final = pd.concat([df_novos_sorteios, df_existente], ignore_index=True)
+                self.dados = df_final
+            else:
+                df_final = df_novos_sorteios
+                self.dados = df_final
+            
+            # Salvar no arquivo XLSX (sobrescreve o arquivo existente com os novos dados)
+            df_final.to_excel(arquivo_excel, index=False, engine='openpyxl')
+            print(f"Novos sorteios adicionados e salvos em {arquivo_excel}.")
+        else:
+            print("Nenhum sorteio novo foi coletado.")
+        
+        
+
+        # Fechar o navegador ao final do processo
+        driver.quit()
+    
+    # Função para calcular a frequência dos números em uma amostra
+    def calcular_frequencia_amostra(self, tamanho_amostra, tipo_amostra='news'):
+
+        df = self.dados
+        self.tamanho_amostra = tamanho_amostra
+        self.tipo_amostra = tipo_amostra
+    
+        if tipo_amostra == 'random':
+            # Selecionar uma amostra aleatória. 
+            # Obs: random state fixo! Para amostras totalmente aleatórias, excluir este parâmetro.
+            # amostra = df.sample(n=tamanho_amostra, random_state=42)
+            amostra = df.sample(n=tamanho_amostra)
+        elif tipo_amostra == 'old':
+            # Selecionar os n antigos sorteios
+            amostra = df.tail(tamanho_amostra)
+        elif tipo_amostra == 'news':
+            # Selecionar os n recentes sorteios
+            amostra = df.head(tamanho_amostra)
+        else:
+            raise ValueError("Tipo de amostra inválido. Use 'aleatoria', 'old' ou 'news'.")
+
+        # Calcular a frequência dos números sorteados na amostra
+        frequencias = {}
+        for _, row in amostra.iterrows():
+            # Pegar os números sorteados (colunas Num1 até Num15)
+            numeros_sorteio = row.iloc[2:17].values
+            for numero in numeros_sorteio:
+                if numero in frequencias:
+                    frequencias[numero] += 1
+                else:
+                    frequencias[numero] = 1
+        
+        # Ordenar as frequências
+        frequencias_ordenadas = dict(sorted(frequencias.items(), key=lambda x: x[1], reverse=True))
+        
+        return frequencias_ordenadas
+    
+    def calc_pares_trincas_quadras(self):
+
+        from pandas import DataFrame as pd_DataFrame
+        from collections import Counter
+        import itertools
+
+        # Carregar o arquivo Excel
+        dados = self.dados
+
+        amostra = dados.head(self.tamanho_amostra).copy()
+
+        # amostra = amostra.copy()
+
+        # Juntar as colunas dos números sorteados (colunas 2 a 16, pois Python usa indexação a partir de 0)
+        amostra['numeros_juntos'] = amostra.loc[:, 2:16].apply(lambda row: ','.join(row.astype(str)), axis=1)
+
+        # Separar os números sorteados que estão agrupados em uma coluna
+        amostra['numeros_juntos'] = amostra['numeros_juntos'].str.split(',')
+
+        # Flatten todos os números sorteados em uma única lista
+        todos_numeros = [list(map(int, sublist)) for sublist in amostra['numeros_juntos']]
+
+        # Contar pares e trincas
+        pares_counter = Counter()
+        trincas_counter = Counter()
+        quadras_counter = Counter()
+
+        for sorteio in todos_numeros:
+            # Obter todos os pares
+            pares = list(itertools.combinations(sorteio, 2))
+            pares_counter.update(pares)
+            
+            # Obter todas as trincas
+            trincas = list(itertools.combinations(sorteio, 3))
+            trincas_counter.update(trincas)
+
+            # Obter todas as quadras
+            quadras = list(itertools.combinations(sorteio, 4))
+            quadras_counter.update(quadras)
+
+        # Criar DataFrames para pares e trincas
+        self.pares_df = pd_DataFrame(pares_counter.items(), columns=['Par', 'Frequência']).sort_values(by='Frequência', ascending=False, ignore_index= True)
+        self.trincas_df = pd_DataFrame(trincas_counter.items(), columns=['Trinca', 'Frequência']).sort_values(by='Frequência', ascending=False, ignore_index= True)
+        self.quadras_df = pd_DataFrame(quadras_counter.items(), columns=['Quadra', 'Frequência']).sort_values(by='Frequência', ascending=False, ignore_index= True)
+
+        # # Salvar os resultados em arquivos Excel separados
+        # pares_df.to_excel('frequencia_pares_lotofacil.xlsx', index=False)
+        # trincas_df.to_excel('frequencia_trincas_lotofacil.xlsx', index=False)
+        # quadras_df.to_excel('frequencia_quadras_lotofacil.xlsx', index=False)
+
+        print("Cálculos realizados com sucesso!")
