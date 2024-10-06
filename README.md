@@ -33,8 +33,7 @@ Você pode instalar todas as bibliotecas necessárias usando o `pip`. Execute o 
 
 ```bash
 pip install pandas selenium webdriver-manager
-
-<hr>
+```
 
 Para calcular as chances de acertar **15 números entre 25** apostando **15 números** na Lotofácil, você pode usar o conceito de **combinação**.
 
