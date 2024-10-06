@@ -303,10 +303,14 @@ class analise:
         num_sorteios = self.tamanho_amostra
 
         # Seleciona os dados da coluna específica
-        dados_coluna = self.dados.iloc[:num_sorteios, coluna]
+        dados_coluna1 = self.dados.iloc[:num_sorteios, coluna]
+        dados_coluna = dados_coluna1.iloc[::-1].reset_index(drop=True)
 
         # Calcula a média móvel simples
         media_movel = dados_coluna.rolling(window=janela).mean()
+
+        # Calcular a média móvel exponêncial
+        # media_movel = dados_coluna.ewm(span= janela, adjust=False).mean()
 
         # Remove valores NaN antes de aplicar o arredondamento
         media_movel_sem_nan = media_movel.dropna()
@@ -328,7 +332,7 @@ class analise:
         for i in range(janela, len(dados_coluna)):
             if dados_coluna.iloc[i] == media_movel_arredondada.iloc[i - janela]:
                 # Se o número sorteado for igual à média móvel do sorteio anterior, pinta de vermelho
-                plt.scatter(i+1, dados_coluna.iloc[i], color='red', s=100, label='Sorteio = Média Móvel' if i == 1 else "")
+                plt.scatter(i, dados_coluna.iloc[i], color='red', s=100, label='Sorteio = Média Móvel' if i == 1 else "")
                 sorteado += 1
 
         # Linha para a média móvel simples
