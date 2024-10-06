@@ -42,9 +42,9 @@ A Lotofácil é uma das loterias mais populares no Brasil, onde o jogador deve e
 ### Fórmula para Combinação
 
 Usamos a seguinte fórmula de combinação para calcular as probabilidades:
-
+```bash
 ![Fórmula de Combinação](https://latex.codecogs.com/png.latex?C(n,k)%20=%20\frac{n!}{k!%20\cdot%20(n-k)!})
-
+```
 Onde:
 - `n` é o número total de números disponíveis (no caso, 25),
 - `k` é o número de números escolhidos (no caso, 15).
