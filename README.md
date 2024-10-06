@@ -35,62 +35,163 @@ Você pode instalar todas as bibliotecas necessárias usando o `pip`. Execute o 
 pip install pandas selenium webdriver-manager
 ```
 
-Para calcular as chances de acertar **15 números entre 25** apostando **15 números** na Lotofácil, você pode usar o conceito de **combinação**.
+Probabilidade de Acertar 15 Números na Lotofácil
+A Lotofácil é uma das loterias mais populares no Brasil, onde o jogador deve escolher 15 números entre 25 e aguardar o sorteio dos 15 números vencedores. Este documento descreve como calcular as chances de acertar todos os 15 números utilizando o conceito de combinação.
 
-Na Lotofácil, 15 números são sorteados entre os 25 disponíveis, e a aposta também consiste em 15 números. A fórmula para calcular as combinações possíveis é:
+Fórmula para Combinação
+Usamos a seguinte fórmula de combinação para calcular as probabilidades:
 
-\[
-C(n, k) = \frac{n!}{k! \cdot (n - k)!}
-\]
-
+𝐶
+(
+𝑛
+,
+𝑘
+)
+=
+𝑛
+!
+𝑘
+!
+⋅
+(
+𝑛
+−
+𝑘
+)
+!
+C(n,k)= 
+k!⋅(n−k)!
+n!
+​
+ 
 Onde:
-- \( n \) é o total de números disponíveis (25),
-- \( k \) é o número de números a serem sorteados ou apostados (15).
 
-Agora, você precisa calcular o número de combinações possíveis para o sorteio e também para as combinações favoráveis.
+𝑛
+n é o número total de números disponíveis (no caso, 25),
+𝑘
+k é o número de números escolhidos (no caso, 15).
+Cálculo Passo a Passo
+Total de combinações possíveis (escolher 15 números de 25):
+𝐶
+(
+25
+,
+15
+)
+=
+25
+!
+15
+!
+⋅
+(
+25
+−
+15
+)
+!
+=
+25
+!
+15
+!
+⋅
+10
+!
+C(25,15)= 
+15!⋅(25−15)!
+25!
+​
+ = 
+15!⋅10!
+25!
+​
+ 
+Resultado:
 
-### Passo a passo:
+𝐶
+(
+25
+,
+15
+)
+=
+3.268.760
+C(25,15)=3.268.760
+Combinações favoráveis para acertar todos os 15 números:
+Para acertar exatamente os 15 números sorteados, você deve:
 
-1. **Total de combinações possíveis** (escolher 15 números de 25):
+Acertar todos os 15 números escolhidos,
+Não errar nenhum dos 10 números restantes.
+Ou seja:
 
-\[
-C(25, 15) = \frac{25!}{15! \cdot (25 - 15)!} = \frac{25!}{15! \cdot 10!}
-\]
+𝐶
+(
+15
+,
+15
+)
+=
+1
+(acertando todos os 15 n
+u
+ˊ
+meros)
+C(15,15)=1(acertando todos os 15 n 
+u
+ˊ
+ meros)
+𝐶
+(
+10
+,
+0
+)
+=
+1
+(n
+a
+˜
+o escolhendo nenhum dos 10 n
+u
+ˊ
+meros restantes)
+C(10,0)=1(n 
+a
+˜
+ o escolhendo nenhum dos 10 n 
+u
+ˊ
+ meros restantes)
+Probabilidade de acertar os 15 números:
+A probabilidade de acertar é a razão entre as combinações favoráveis e o total de combinações possíveis:
 
-2. **Combinando 15 números corretos** (se você acertar todos):
+𝑃
+=
+1
+𝐶
+(
+25
+,
+15
+)
+=
+1
+3.268.760
+≈
+0
+,
+0000306
+P= 
+C(25,15)
+1
+​
+ = 
+3.268.760
+1
+​
+ ≈0,0000306
+Ou seja, a chance de acertar os 15 números em uma aposta de 15 números na Lotofácil é de 1 em 3.268.760, ou aproximadamente 0,0000306 (0,00003%).
 
-\[
-C(15, 15) = 1 \quad \text{(você precisa acertar todos os 15 números que escolheu)}
-\]
-
-3. **Combinando os 10 números restantes que não foram sorteados** (escolher 0 dos 10 que faltam):
-
-\[
-C(10, 0) = 1
-\]
-
-Portanto, a quantidade de combinações favoráveis é 1 (já que você precisa acertar todos os 15 números e não pode errar nenhum dos 10 restantes).
-
-4. **Probabilidade de acertar**:
-
-A probabilidade de acertar os 15 números em uma aposta é dada pela razão entre as combinações favoráveis e o total de combinações possíveis:
-
-\[
-P = \frac{1}{C(25, 15)}
-\]
-
-Calculando \( C(25, 15) \):
-
-\[
-C(25, 15) = 3.268.760
-\]
-
-Assim, a probabilidade de acertar os 15 números é:
-
-\[
-P = \frac{1}{3.268.760} \approx 0,0000306
-\]
-
-Ou seja, a chance de acertar os 15 números em uma aposta de 15 números na Lotofácil é de **1 em 3.268.760**, aproximadamente 0,00003%, ou 0,0000306 de probabilidade.
-
-Essa é uma chance extremamente pequena, como ocorre em muitos jogos de loteria.
+Conclusão
+As chances de acertar todos os 15 números na Lotofácil são muito pequenas, mas é sempre bom lembrar que na loteria, a diversão está em participar! Boa sorte, e que sua persistência traga grandes conquistas!
