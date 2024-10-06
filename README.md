@@ -79,6 +79,12 @@ A probabilidade de acertar é a razão entre as combinações favoráveis e o to
 
 Ou seja, a chance de acertar os 15 números em uma aposta de 15 números na Lotofácil é de **1 em 3.268.760**, ou aproximadamente **0,0000306** (0,00003%).
 
-### Conclusão
+Já a probabilidade de acertar os 15 números **jogando 16 números** é de **1 em 204.297** ≈0,00049%.
 
-As chances de acertar todos os 15 números na Lotofácil são muito pequenas, mas é sempre bom lembrar que na loteria, a diversão está em participar! Boa sorte, e que sua persistência traga grandes conquistas!
+17 números  **1 em 24.035** ≈0,00416%.
+
+18 números  **1 em 4.005** ≈0,099%.
+
+19 números  **1 em 1.033** ≈0,097%.
+
+20 números  **1 em 263** ≈0,38%.
