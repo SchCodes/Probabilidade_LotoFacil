@@ -61,11 +61,6 @@ Resultado:
 
 2. **Combinações favoráveis para acertar todos os 15 números:**
 
-Para acertar exatamente os 15 números sorteados, você deve:
-   - Acertar todos os 15 números escolhidos,
-   - Não errar nenhum dos 10 números restantes.
-
-Ou seja:
 
 ![Combinações Favoráveis](https://latex.codecogs.com/png.latex?C(15,15)%20=%201)
 
