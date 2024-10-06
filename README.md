@@ -43,7 +43,7 @@ A Lotofácil é uma das loterias mais populares no Brasil, onde o jogador deve e
 
 Usamos a seguinte fórmula de combinação para calcular as probabilidades:
 
-![Fórmula de Combinação](https://latex.codecogs.com/svg.latex?C(n,%20k)%20=%20\frac{n!}{k!%20\cdot%20(n%20-%20k)!})
+![Fórmula de Combinação](https://mathurl.com/5fdf6x)
 
 Onde:
 - `n` é o número total de números disponíveis (no caso, 25),
@@ -53,11 +53,11 @@ Onde:
 
 1. **Total de combinações possíveis (escolher 15 números de 25):**
 
-![Total de Combinações](https://latex.codecogs.com/svg.latex?C(25,%2015)%20=%20\frac{25!}{15!%20\cdot%20(25%20-%2015)!}%20=%20\frac{25!}{15!%20\cdot%2010!})
+![Total de Combinações](https://mathurl.com/hpj83y)
 
 Resultado:
 
-![Resultado Combinações](https://latex.codecogs.com/svg.latex?C(25,%2015)%20=%203.268.760)
+![Resultado Combinações](https://mathurl.com/qj2h3a)
 
 2. **Combinações favoráveis para acertar todos os 15 números:**
 
@@ -67,15 +67,15 @@ Para acertar exatamente os 15 números sorteados, você deve:
 
 Ou seja:
 
-![Combinações Favoráveis](https://latex.codecogs.com/svg.latex?C(15,%2015)%20=%201%20%5Cquad%20%5Ctext%7B(acertando%20todos%20os%2015%20n%C3%BAmeros)%7D)
+![Combinações Favoráveis](https://mathurl.com/1u46xz)
 
-![Combinações Não Escolhidas](https://latex.codecogs.com/svg.latex?C(10,%200)%20=%201%20%5Cquad%20%5Ctext%7B(n%C3%A3o%20escolhendo%20nenhum%20dos%2010%20n%C3%BAmeros%20restantes)%7D)
+![Combinações Não Escolhidas](https://mathurl.com/jw2djw)
 
 3. **Probabilidade de acertar os 15 números:**
 
 A probabilidade de acertar é a razão entre as combinações favoráveis e o total de combinações possíveis:
 
-![Probabilidade](https://latex.codecogs.com/svg.latex?P%20=%20\frac{1}{C(25,%2015)}%20=%20\frac{1}{3.268.760}%20\approx%200,0000306)
+![Probabilidade](https://mathurl.com/mge6x6)
 
 Ou seja, a chance de acertar os 15 números em uma aposta de 15 números na Lotofácil é de **1 em 3.268.760**, ou aproximadamente **0,0000306** (0,00003%).
 
