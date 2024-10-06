@@ -1,33 +1,38 @@
+import pandas as pd
+import numpy as np
+import os
+import pandas as pd
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+import time
+import re
+from collections import Counter
+import itertools
+import matplotlib.pyplot as plt
+
 class analise:
     
-    def __init__(self, data_base= 'BD_full_lotoFacil.xlsx'):
+    def __init__(self, data_base= 'BD_full_lotoFacil.xlsx', tamanho_amostra= 10):
 
         '''
         O objeto inicialmente criado é do tipo DataFrame do pandas.
         Como parâmetro é possível passar o data_base, que obrigatóriamente deve estar no formato ".xlsx"
         '''
-    
-        from pandas import read_excel as pd_re
 
         self.data_base = data_base
 
-        self.dados = pd_re(self.data_base, header= None)
+        self.dados = pd.read_excel(self.data_base, header= None)
         self.dados = self.dados.drop(0)
         #ordena os dados de forma ascendente utilizando a coluna [0] == concursos
         self.dados = self.dados.sort_values(by=0, ascending= False)
-        self.tamanho_amostra = 10
+        self.tamanho_amostra = tamanho_amostra
 
     def coletar_dados(self):
-        import os
-        import pandas as pd
-        from selenium import webdriver
-        from selenium.webdriver.chrome.service import Service
-        from selenium.webdriver.common.by import By
-        from selenium.webdriver.support.ui import WebDriverWait
-        from selenium.webdriver.support import expected_conditions as EC
-        from webdriver_manager.chrome import ChromeDriverManager
-        import time
-        import re
+    
 
         # Nome do arquivo onde os dados serão armazenados
         arquivo_excel = self.data_base
@@ -145,10 +150,10 @@ class analise:
         driver.quit()
     
     # Função para calcular a frequência dos números em uma amostra
-    def calcular_frequencia_amostra(self, tamanho_amostra, tipo_amostra='news'):
+    def calcular_frequencia_amostra(self, tipo_amostra='news'):
 
         df = self.dados
-        self.tamanho_amostra = tamanho_amostra
+        tamanho_amostra = self.tamanho_amostra
         self.tipo_amostra = tipo_amostra
     
         if tipo_amostra == 'random':
@@ -182,10 +187,6 @@ class analise:
         return frequencias_ordenadas
     
     def calc_pares_trincas_quadras(self):
-
-        from pandas import DataFrame as pd_DataFrame
-        from collections import Counter
-        import itertools
 
         # Carregar o arquivo Excel
         dados = self.dados
@@ -222,9 +223,9 @@ class analise:
             quadras_counter.update(quadras)
 
         # Criar DataFrames para pares e trincas
-        self.pares_df = pd_DataFrame(pares_counter.items(), columns=['Par', 'Frequência']).sort_values(by='Frequência', ascending=False, ignore_index= True)
-        self.trincas_df = pd_DataFrame(trincas_counter.items(), columns=['Trinca', 'Frequência']).sort_values(by='Frequência', ascending=False, ignore_index= True)
-        self.quadras_df = pd_DataFrame(quadras_counter.items(), columns=['Quadra', 'Frequência']).sort_values(by='Frequência', ascending=False, ignore_index= True)
+        self.pares_df = pd.DataFrame(pares_counter.items(), columns=['Par', 'Frequência']).sort_values(by='Frequência', ascending=False, ignore_index= True)
+        self.trincas_df = pd.DataFrame(trincas_counter.items(), columns=['Trinca', 'Frequência']).sort_values(by='Frequência', ascending=False, ignore_index= True)
+        self.quadras_df = pd.DataFrame(quadras_counter.items(), columns=['Quadra', 'Frequência']).sort_values(by='Frequência', ascending=False, ignore_index= True)
 
         # # Salvar os resultados em arquivos Excel separados
         # pares_df.to_excel('frequencia_pares_lotofacil.xlsx', index=False)
@@ -232,3 +233,117 @@ class analise:
         # quadras_df.to_excel('frequencia_quadras_lotofacil.xlsx', index=False)
 
         print("Cálculos realizados com sucesso!")
+
+    def arredondar_customizado(self, valor):
+
+        # Arredonda para baixo se for menor que 0.5 e para cima se for 0.5 ou maior
+        return int(np.floor(valor + 0.5))
+
+    def calcular_media_simples(self):
+        
+        df = self.dados
+        num_sorteios = self.tamanho_amostra
+
+        # Seleciona as colunas dos números sorteados (da terceira coluna em diante)
+        numeros_sorteados = df.iloc[:, 2:]
+        
+        # Seleciona os dados retroativos (mais recentes) com base na quantidade de sorteios especificada
+        dados_retroativos = numeros_sorteados.head(num_sorteios)
+        
+        # Calcula a média simples de cada coluna
+        media_simples = dados_retroativos.mean()
+        
+        media_arredondada = media_simples.apply(self.arredondar_customizado)
+        
+        return media_arredondada
+    
+    def calcular_media_movel_simples(self, janela = 9):
+        # Seleciona as colunas dos números sorteados (da terceira coluna em diante)
+        numeros_sorteados = self.df.iloc[:, 2:]
+        
+        # Calcula a média móvel simples para cada coluna (número sorteado)
+        media_movel = numeros_sorteados.rolling(window=janela).mean().apply(self.arredondar_customizado)
+        
+        return media_movel
+    
+    def plotar_barras_media_movel(self, coluna, janela):
+
+        num_sorteios = self.tamanho_amostra
+        # Seleciona os dados da coluna específica
+        dados_coluna = self.dados.iloc[:num_sorteios, coluna]
+
+        # Calcula a média móvel simples
+        media_movel = dados_coluna.rolling(window=janela).mean()
+
+        # Remove valores NaN antes de aplicar o arredondamento
+        media_movel_sem_nan = media_movel.dropna()
+
+        # Aplica o arredondamento personalizado
+        media_movel_arredondada = media_movel_sem_nan.apply(self.arredondar_customizado)
+
+        # Configura o gráfico
+        plt.figure(figsize=(12, 6))
+
+        # Gráfico de barras para os números sorteados
+        plt.bar(dados_coluna.index, dados_coluna, label='Sorteios', color='lightblue')
+
+        # Linha para a média móvel simples
+        plt.plot(media_movel_arredondada.index, media_movel_arredondada, label='Média Móvel Simples', color='orange', linewidth=2)
+
+        # Títulos e legendas
+        plt.title(f'Gráfico de Barras e Média Móvel - Coluna {coluna} (Janela = {janela})')
+        plt.xlabel('Números Sorteados')
+        plt.ylabel('Valores')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+    def plotar_scatter_media_movel(self, coluna, janela):
+
+        num_sorteios = self.tamanho_amostra
+
+        # Seleciona os dados da coluna específica
+        dados_coluna = self.dados.iloc[:num_sorteios, coluna]
+
+        # Calcula a média móvel simples
+        media_movel = dados_coluna.rolling(window=janela).mean()
+
+        # Remove valores NaN antes de aplicar o arredondamento
+        media_movel_sem_nan = media_movel.dropna()
+
+        # Aplica o arredondamento personalizado
+        media_movel_arredondada = media_movel_sem_nan.apply(self.arredondar_customizado)
+
+        self.media_movel_scatter_arredondada = media_movel_arredondada
+
+        # Configura o gráfico
+        plt.figure(figsize=(12, 6))
+
+        # Gráfico de dispersão (scatter plot) para os números sorteados
+        plt.scatter(dados_coluna.index, dados_coluna, label='Sorteios', color='blue', s=100)
+        
+        sorteado = 0
+        
+        # Verifica e marca os pontos vermelhos onde o sorteio foi igual à média móvel anterior
+        for i in range(janela, len(dados_coluna)):
+            if dados_coluna.iloc[i] == media_movel_arredondada.iloc[i - janela]:
+                # Se o número sorteado for igual à média móvel do sorteio anterior, pinta de vermelho
+                plt.scatter(i+1, dados_coluna.iloc[i], color='red', s=100, label='Sorteio = Média Móvel' if i == 1 else "")
+                sorteado += 1
+
+        # Linha para a média móvel simples
+        plt.plot(media_movel_arredondada.index, media_movel_arredondada, label='Média Móvel Simples', color='orange', linewidth=2)
+
+        # Colocar os números sorteados no eixo x
+        plt.xticks(ticks=dados_coluna.index, labels="")
+
+        # Força o eixo Y a mostrar apenas valores inteiros
+        plt.yticks(np.arange(dados_coluna.min(), dados_coluna.max() + 1, 1))
+
+        # Títulos e legendas
+        plt.title(f'Gráfico de Pontos e Média Móvel - Coluna {coluna} (Janela = {janela})')
+        plt.xlabel(f'Contagem números sorteados na média = {sorteado}\nRepresentando {float(sorteado/len(media_movel_arredondada)*100):.2f}% da amostra.')
+        plt.ylabel('Valores')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
