@@ -270,7 +270,8 @@ class analise:
 
         num_sorteios = self.tamanho_amostra
         # Seleciona os dados da coluna específica
-        dados_coluna = self.dados.iloc[:num_sorteios, coluna]
+        dados_coluna1 = self.dados.iloc[:num_sorteios, coluna]
+        dados_coluna = dados_coluna1.iloc[::-1].reset_index(drop=True)
 
         # Calcula a média móvel simples
         media_movel = dados_coluna.rolling(window=janela).mean()
@@ -280,6 +281,8 @@ class analise:
 
         # Aplica o arredondamento personalizado
         media_movel_arredondada = media_movel_sem_nan.apply(self.arredondar_customizado)
+
+        self.media_movel_barras_arredondada = media_movel_arredondada
 
         # Configura o gráfico
         plt.figure(figsize=(12, 6))
@@ -291,7 +294,7 @@ class analise:
         plt.plot(media_movel_arredondada.index, media_movel_arredondada, label='Média Móvel Simples', color='orange', linewidth=2)
 
         # Títulos e legendas
-        plt.title(f'Gráfico de Barras e Média Móvel - Coluna {coluna} (Janela = {janela})')
+        plt.title(f'Gráfico de Barras e Média Móvel - Coluna {coluna - 1} (Média móvel simples de {janela} períodos.)')
         plt.xlabel('Números Sorteados')
         plt.ylabel('Valores')
         plt.legend()
@@ -345,7 +348,7 @@ class analise:
         plt.yticks(np.arange(dados_coluna.min(), dados_coluna.max() + 1, 1))
 
         # Títulos e legendas
-        plt.title(f'Gráfico de Pontos e Média Móvel - Coluna {coluna} (Janela = {janela})')
+        plt.title(f'Gráfico de Pontos e Média Móvel - Coluna {coluna - 1} (Média móvel simples de {janela} períodos.)')
         plt.xlabel(f'Contagem números sorteados na média = {sorteado}\nRepresentando {float(sorteado/len(media_movel_arredondada)*100):.2f}% da amostra.')
         plt.ylabel('Valores')
         plt.legend()
