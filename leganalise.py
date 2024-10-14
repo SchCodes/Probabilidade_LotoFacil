@@ -13,6 +13,7 @@ import re
 from collections import Counter
 import itertools
 import matplotlib.pyplot as plt
+import plotly.graph_objs as go
 
 class analise:
     
@@ -354,3 +355,58 @@ class analise:
         plt.legend()
         plt.grid(True)
         plt.show()
+
+    def plotar_scatter_media_movel_dash(self, coluna, janela):
+        num_sorteios = self.tamanho_amostra
+        # Seleciona os dados da coluna específica
+        dados_coluna1 = self.dados.iloc[:num_sorteios, coluna]
+        dados_coluna = dados_coluna1.iloc[::-1].reset_index(drop=True)
+
+        # Converter a coluna para valores numéricos, ignorando erros
+        dados_coluna = pd.to_numeric(dados_coluna, errors='coerce')
+
+        # Calcula a média móvel simples e arredonda os valores para inteiros
+        media_movel = dados_coluna.rolling(window=janela).mean().round(0)
+
+        # Cria o gráfico com Plotly
+        fig = go.Figure()
+
+        # Adiciona os dados originais como pontos
+        fig.add_trace(go.Scatter(
+            x=list(range(len(dados_coluna))),
+            y=dados_coluna,
+            mode='markers',
+            marker=dict(color='blue'),
+            name='Dados Originais'
+        ))
+
+        # Adiciona a média móvel como linha
+        fig.add_trace(go.Scatter(
+            x=list(range(len(media_movel))),
+            y=media_movel,
+            mode='lines',
+            name='Média Móvel'
+        ))
+
+        # Adiciona os pontos sorteados que estavam na média do sorteio passado
+        for i in range(1, len(dados_coluna)):
+            if dados_coluna[i] == media_movel[i-1]:
+                fig.add_trace(go.Scatter(
+                    x=[i],
+                    y=[dados_coluna[i]],
+                    mode='markers',
+                    marker=dict(color='red', size=10),
+                    name='Número Sorteado na Média'
+                ))
+
+        # Configurações adicionais do layout do gráfico
+        fig.update_layout(
+            title=f'Média Móvel Simples - Coluna {coluna}',
+            xaxis_title='Índice',
+            yaxis_title='Valor',
+            legend_title='Legenda',
+            yaxis=dict(tickformat="d"),  # Formato dos ticks do eixo y para mostrar apenas inteiros
+            showlegend=False  # Remove a legenda do gráfico
+        )
+
+        return fig
