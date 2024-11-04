@@ -59,14 +59,7 @@ Resultado:
 
 ![Resultado Combinações](https://latex.codecogs.com/png.latex?C(25,15)%20=%203.268.760)
 
-2. **Combinações favoráveis para acertar todos os 15 números:**
-
-
-![Combinações Favoráveis](https://latex.codecogs.com/png.latex?C(15,15)%20=%201)
-
-![Combinações Não Escolhidas](https://latex.codecogs.com/png.latex?C(10,0)%20=%201)
-
-3. **Probabilidade de acertar os 15 números:**
+2. **Probabilidade de acertar os 15 números:**
 
 A probabilidade de acertar é a razão entre as combinações favoráveis e o total de combinações possíveis:
 
