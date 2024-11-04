@@ -31,7 +31,7 @@ app.layout = html.Div([
     #     value=1
     # ),
     html.Div(
-        gerar_15_graficos(5),  # Gera os 15 gráficos com janela = 3
+        gerar_15_graficos(5),  # Gera os 15 gráficos com janela(qnt períodos para a média móvel) = 5
         style={'display': 'grid', 'gridTemplateColumns': 'repeat(3, 1fr)', 'gap': '20px'}
     )
 ])
