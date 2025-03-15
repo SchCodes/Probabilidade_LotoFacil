@@ -18,7 +18,6 @@ import plotly.graph_objs as go
 class analise:
     
     def __init__(self, data_base= 'BD_full_lotoFacil.xlsx', tamanho_amostra= 10):
-
         '''
         O objeto inicialmente criado é do tipo DataFrame do pandas.
         Como parâmetro é possível passar o data_base, que obrigatóriamente deve estar no formato ".xlsx"
@@ -33,8 +32,6 @@ class analise:
         self.tamanho_amostra = tamanho_amostra
 
     def coletar_dados(self):
-    
-
         # Nome do arquivo onde os dados serão armazenados
         arquivo_excel = self.data_base
 
@@ -152,7 +149,6 @@ class analise:
     
     # Função para calcular a frequência dos números em uma amostra
     def calcular_frequencia_amostra(self, tipo_amostra='news'):
-
         df = self.dados
         tamanho_amostra = self.tamanho_amostra
         self.tipo_amostra = tipo_amostra
@@ -188,7 +184,6 @@ class analise:
         return frequencias_ordenadas
     
     def calc_pares_trincas_quadras(self):
-
         # Carregar o arquivo Excel
         dados = self.dados
 
@@ -236,12 +231,10 @@ class analise:
         print("Cálculos realizados com sucesso!")
 
     def arredondar_customizado(self, valor):
-
         # Arredonda para baixo se for menor que 0.5 e para cima se for 0.5 ou maior
         return int(np.floor(valor + 0.5))
 
     def calcular_media_simples(self):
-        
         df = self.dados
         num_sorteios = self.tamanho_amostra
 
@@ -268,7 +261,6 @@ class analise:
         return media_movel
     
     def plotar_barras_media_movel(self, coluna, janela):
-
         num_sorteios = self.tamanho_amostra
         # Seleciona os dados da coluna específica
         dados_coluna1 = self.dados.iloc[:num_sorteios, coluna]
@@ -303,7 +295,6 @@ class analise:
         plt.show()
 
     def plotar_scatter_media_movel(self, coluna, janela):
-
         num_sorteios = self.tamanho_amostra
 
         # Seleciona os dados da coluna específica
