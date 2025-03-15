@@ -7,11 +7,14 @@ O **Leganálise** é um projeto desenvolvido para coletar, analisar e visualizar
 - Coleta de dados de sorteios da LotoFácil.
 - Análise de frequência de números sorteados.
 - Cálculos estatísticos, incluindo médias e distribuições.
+- Visualização de dados com gráficos de barras e scatter plots.
 
 ## Tecnologias Utilizadas
 - Python
 - Pandas
 - Selenium
+- Matplotlib
+- Plotly
 - Jupyter Notebook (para análise interativa)
 
 ## Bibliotecas Necessárias
@@ -26,53 +29,89 @@ Este projeto utiliza as seguintes bibliotecas Python:
 - **re**: Para manipulação de expressões regulares. **(biblioteca padrão do python)**
 - **collections.Counter**: Para contar a frequência de itens. **(biblioteca padrão do python)**
 - **itertools**: Para criar iteradores eficientes para loops. **(biblioteca padrão do python)**
+- **matplotlib.pyplot**: Para criação de gráficos.
+- **plotly.graph_objs**: Para criação de gráficos interativos.
 
 ### Instalação das Bibliotecas
 
 Você pode instalar todas as bibliotecas necessárias usando o `pip`. Execute o seguinte comando no seu terminal:
 
 ```bash
-pip install pandas selenium webdriver-manager
+pip install pandas selenium webdriver-manager matplotlib plotly openpyxl
 ```
 
-# Probabilidade de Acertar 15 Números na Lotofácil
+## Uso
 
-A Lotofácil é uma das loterias mais populares no Brasil, onde o jogador deve escolher **15 números entre 25** e aguardar o sorteio dos 15 números vencedores. Este documento descreve como calcular as chances de acertar todos os 15 números utilizando o conceito de **combinação**.
+### Inicialização
 
-### Fórmula para Combinação
+Para iniciar a análise, você deve criar uma instância da classe `analise`:
 
-Usamos a seguinte fórmula de combinação para calcular as probabilidades:
+```python
+import leganalise as leg
 
-![Fórmula de Combinação](https://latex.codecogs.com/png.latex?C(n,k)%20=%20\frac{n!}{k!%20\cdot%20(n-k)!})
+lotofacil = leg.analise(tamanho_amostra=21) # instancia a classe analise
+```
 
-Onde:
-- `n` é o número total de números disponíveis (no caso, 25),
-- `k` é o número de números escolhidos (no caso, 15).
+### Funções Disponíveis
 
-### Cálculo Passo a Passo
+#### `coletar_dados()`
+Coleta os dados dos sorteios da LotoFácil diretamente do site da Caixa e salva em um arquivo Excel.
 
-1. **Total de combinações possíveis (escolher 15 números de 25):**
+#### `calcular_frequencia_amostra(tipo_amostra='news')`
+Calcula a frequência dos números sorteados em uma amostra. Os tipos de amostra podem ser:
+- `'random'`: Seleciona uma amostra aleatória.
+- `'old'`: Seleciona os sorteios mais antigos.
+- `'news'`: Seleciona os sorteios mais recentes.
 
-![Total de Combinações](https://latex.codecogs.com/png.latex?C(25,15)%20=%20\frac{25!}{15!%20\cdot%20(25-15)!})
+#### `calc_pares_trincas_quadras()`
+Calcula a frequência de pares, trincas e quadras de números sorteados.
 
-Resultado:
+#### `arredondar_customizado(valor)`
+Arredonda um valor para o inteiro mais próximo.
 
-![Resultado Combinações](https://latex.codecogs.com/png.latex?C(25,15)%20=%203.268.760)
+#### `calcular_media_simples()`
+Calcula a média simples dos números sorteados.
 
-2. **Probabilidade de acertar os 15 números:**
+#### `calcular_media_movel_simples(janela=9)`
+Calcula a média móvel simples dos números sorteados com uma janela especificada.
 
-A probabilidade de acertar é a razão entre as combinações favoráveis e o total de combinações possíveis:
+#### `plotar_barras_media_movel(coluna, janela)`
+Plota um gráfico de barras com a média móvel simples para uma coluna específica e uma janela especificada.
 
-![Probabilidade](https://latex.codecogs.com/png.latex?P%20=%20\frac{1}{C(25,15)}%20=%20\frac{1}{3.268.760}%20\approx%200,0000306)
+#### `plotar_scatter_media_movel(coluna, janela)`
+Plota um gráfico de dispersão (scatter plot) com a média móvel simples para uma coluna específica e uma janela especificada.
 
-Ou seja, a chance de acertar os 15 números em uma aposta de 15 números na Lotofácil é de **1 em 3.268.760**, ou aproximadamente **0,0000306** (0,00003%).
+#### `plotar_scatter_media_movel_dash(coluna, janela)`
+Plota um gráfico de dispersão interativo com Plotly, mostrando a média móvel simples para uma coluna específica e uma janela especificada.
 
-Já a probabilidade de acertar os 15 números **jogando 16 números** é de **1 em 204.297** ≈0,00049%.
+## Exemplo de Uso
 
-17 números  **1 em 24.035** ≈0,00416%.
+```python
+import leganalise as leg
 
-18 números  **1 em 4.005** ≈0,099%.
+# Instanciar a classe analise
+lotofacil = leg.analise(tamanho_amostra=21)
 
-19 números  **1 em 1.033** ≈0,097%.
+# Coletar dados
+lotofacil.coletar_dados()
 
-20 números  **1 em 263** ≈0,38%.
+# Calcular frequência dos números sorteados
+frequencia = lotofacil.calcular_frequencia_amostra()
+
+# Calcular pares, trincas e quadras
+lotofacil.calc_pares_trincas_quadras()
+
+# Plotar gráficos
+lotofacil.plotar_barras_media_movel(coluna=2, janela=5)
+lotofacil.plotar_scatter_media_movel(coluna=2, janela=5)
+fig = lotofacil.plotar_scatter_media_movel_dash(coluna=2, janela=5)
+fig.show()
+```
+
+## Contribuição
+
+Sinta-se à vontade para contribuir com este projeto. Para isso, faça um fork do repositório, crie uma branch para suas alterações e envie um pull request.
+
+## Licença
+
+Este projeto está licenciado sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
