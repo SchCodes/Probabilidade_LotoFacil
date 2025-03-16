@@ -1,37 +1,54 @@
 import pandas as pd
 import numpy as np
 import os
-import pandas as pd
+import re
+import itertools
+import matplotlib.pyplot as plt
+import plotly.graph_objs as go
+import time
+from collections import Counter
+from typing import Dict, Tuple, List
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-import time
-import re
-from collections import Counter
-import itertools
-import matplotlib.pyplot as plt
-import plotly.graph_objs as go
 
-class analise:
+class AnaliseLotoFacil:
     
-    def __init__(self, data_base= 'BD_full_lotoFacil.xlsx', tamanho_amostra= 10):
-        '''
-        O objeto inicialmente criado é do tipo DataFrame do pandas.
-        Como parâmetro é possível passar o data_base, que obrigatóriamente deve estar no formato ".xlsx"
-        '''
-
+    def __init__(self, data_base: str = 'BD_full_lotoFacil.xlsx', tamanho_amostra: int = 10):
+        """
+        Classe para análise de dados da Lotofácil
+        
+        Parâmetros:
+        data_base (str): Nome do arquivo de dados (formato .xlsx)
+        tamanho_amostra (int): Tamanho padrão para amostras de análise
+        """
         self.data_base = data_base
-
-        self.dados = pd.read_excel(self.data_base, header= None)
-        self.dados = self.dados.drop(0)
-        #ordena os dados de forma ascendente utilizando a coluna [0] == concursos
-        self.dados = self.dados.sort_values(by=0, ascending= False)
         self.tamanho_amostra = tamanho_amostra
+        
+        try:
+            self.dados = self._carregar_dados()
+            self._validar_estrutura_dados()
+        except FileNotFoundError:
+            self.dados = pd.DataFrame()
 
-    def coletar_dados(self):
+    def _carregar_dados(self) -> pd.DataFrame:
+        """Carrega e prepara os dados do arquivo Excel"""
+        df = pd.read_excel(self.data_base, header=None)
+        df = df.drop(0).reset_index(drop=True)
+        df = df.sort_values(by=0, ascending=False)
+        return df
+
+    def _validar_estrutura_dados(self) -> None:
+        """Valida a estrutura básica do DataFrame"""
+        if len(self.dados.columns) < 17:
+            raise ValueError("O DataFrame não possui colunas suficientes")
+        if not all(self.dados.iloc[:, 0].apply(lambda x: isinstance(x, (int, float)))):
+            raise ValueError("Coluna de concurso inválida")
+
+    def coletar_dados(self) -> None:
         # Nome do arquivo onde os dados serão armazenados
         arquivo_excel = self.data_base
 
@@ -142,262 +159,361 @@ class analise:
         else:
             print("Nenhum sorteio novo foi coletado.")
         
-        
-
         # Fechar o navegador ao final do processo
         driver.quit()
-    
-    # Função para calcular a frequência dos números em uma amostra
-    def calcular_frequencia_amostra(self, tipo_amostra='news'):
-        df = self.dados
-        tamanho_amostra = self.tamanho_amostra
-        self.tipo_amostra = tipo_amostra
-    
-        if tipo_amostra == 'random':
-            # Selecionar uma amostra aleatória. 
-            # Obs: random state fixo! Para amostras totalmente aleatórias, excluir este parâmetro.
-            # amostra = df.sample(n=tamanho_amostra, random_state=42)
-            amostra = df.sample(n=tamanho_amostra)
-        elif tipo_amostra == 'old':
-            # Selecionar os n antigos sorteios
-            amostra = df.tail(tamanho_amostra)
-        elif tipo_amostra == 'news':
-            # Selecionar os n recentes sorteios
-            amostra = df.head(tamanho_amostra)
-        else:
-            raise ValueError("Tipo de amostra inválido. Use 'aleatoria', 'old' ou 'news'.")
 
-        # Calcular a frequência dos números sorteados na amostra
-        frequencias = {}
+    def _obter_amostra(self) -> pd.DataFrame:
+        """
+        Retorna uma amostra dos dados com base no tamanho especificado.
+        
+        Retorna:
+        pd.DataFrame: Amostra dos dados.
+        """
+        return self.dados.head(self.tamanho_amostra)
+
+    def _calcular_max_sequencia(self) -> int:
+        """
+        Calcula o comprimento da maior sequência de números consecutivos em um mesmo sorteio.
+        
+        Retorna:
+        int: Tamanho da maior sequência encontrada.
+        """
+        max_sequencia = 0
+        amostra = self._obter_amostra()
+        
         for _, row in amostra.iterrows():
-            # Pegar os números sorteados (colunas Num1 até Num15)
-            numeros_sorteio = row.iloc[2:17].values
-            for numero in numeros_sorteio:
-                if numero in frequencias:
-                    frequencias[numero] += 1
-                else:
-                    frequencias[numero] = 1
-        
-        # Ordenar as frequências
-        frequencias_ordenadas = dict(sorted(frequencias.items(), key=lambda x: x[1], reverse=True))
-        
-        return frequencias_ordenadas
-    
-    def calc_pares_trincas_quadras(self):
-        # Carregar o arquivo Excel
-        dados = self.dados
-
-        amostra = dados.head(self.tamanho_amostra).copy()
-
-        # amostra = amostra.copy()
-
-        # Juntar as colunas dos números sorteados (colunas 2 a 16, pois Python usa indexação a partir de 0)
-        amostra['numeros_juntos'] = amostra.loc[:, 2:16].apply(lambda row: ','.join(row.astype(str)), axis=1)
-
-        # Separar os números sorteados que estão agrupados em uma coluna
-        amostra['numeros_juntos'] = amostra['numeros_juntos'].str.split(',')
-
-        # Flatten todos os números sorteados em uma única lista
-        todos_numeros = [list(map(int, sublist)) for sublist in amostra['numeros_juntos']]
-
-        # Contar pares e trincas
-        pares_counter = Counter()
-        trincas_counter = Counter()
-        quadras_counter = Counter()
-
-        for sorteio in todos_numeros:
-            # Obter todos os pares
-            pares = list(itertools.combinations(sorteio, 2))
-            pares_counter.update(pares)
+            numeros = sorted(row.iloc[2:17])  # Ordena os números do sorteio
+            sequencia_atual = 1
+            maior_sequencia_sorteio = 1
             
-            # Obter todas as trincas
-            trincas = list(itertools.combinations(sorteio, 3))
-            trincas_counter.update(trincas)
-
-            # Obter todas as quadras
-            quadras = list(itertools.combinations(sorteio, 4))
-            quadras_counter.update(quadras)
-
-        # Criar DataFrames para pares e trincas
-        self.pares_df = pd.DataFrame(pares_counter.items(), columns=['Par', 'Frequência']).sort_values(by='Frequência', ascending=False, ignore_index= True)
-        self.trincas_df = pd.DataFrame(trincas_counter.items(), columns=['Trinca', 'Frequência']).sort_values(by='Frequência', ascending=False, ignore_index= True)
-        self.quadras_df = pd.DataFrame(quadras_counter.items(), columns=['Quadra', 'Frequência']).sort_values(by='Frequência', ascending=False, ignore_index= True)
-
-        # # Salvar os resultados em arquivos Excel separados
-        # pares_df.to_excel('frequencia_pares_lotofacil.xlsx', index=False)
-        # trincas_df.to_excel('frequencia_trincas_lotofacil.xlsx', index=False)
-        # quadras_df.to_excel('frequencia_quadras_lotofacil.xlsx', index=False)
-
-        print("Cálculos realizados com sucesso!")
-
-    def arredondar_customizado(self, valor):
-        # Arredonda para baixo se for menor que 0.5 e para cima se for 0.5 ou maior
-        return int(np.floor(valor + 0.5))
-
-    def calcular_media_simples(self):
-        df = self.dados
-        num_sorteios = self.tamanho_amostra
-
-        # Seleciona as colunas dos números sorteados (da terceira coluna em diante)
-        numeros_sorteados = df.iloc[:, 2:]
+            for i in range(1, len(numeros)):
+                if numeros[i] == numeros[i-1] + 1:
+                    sequencia_atual += 1
+                    if sequencia_atual > maior_sequencia_sorteio:
+                        maior_sequencia_sorteio = sequencia_atual
+                else:
+                    sequencia_atual = 1
+            
+            if maior_sequencia_sorteio > max_sequencia:
+                max_sequencia = maior_sequencia_sorteio
         
-        # Seleciona os dados retroativos (mais recentes) com base na quantidade de sorteios especificada
-        dados_retroativos = numeros_sorteados.head(num_sorteios)
-        
-        # Calcula a média simples de cada coluna
-        media_simples = dados_retroativos.mean()
-        
-        media_arredondada = media_simples.apply(self.arredondar_customizado)
-        
-        return media_arredondada
+        return max_sequencia
     
-    def calcular_media_movel_simples(self, janela = 9):
-        # Seleciona as colunas dos números sorteados (da terceira coluna em diante)
-        numeros_sorteados = self.df.iloc[:, 2:]
+    def _calcular_distribuicao_pares(self) -> Dict[str, float]:
+        """
+        Calcula a distribuição de números pares e ímpares na amostra.
         
-        # Calcula a média móvel simples para cada coluna (número sorteado)
-        media_movel = numeros_sorteados.rolling(window=janela).mean().apply(self.arredondar_customizado)
+        Retorna:
+        Dict[str, float]: Dicionário com a porcentagem de pares e ímpares.
+        """
+        amostra = self._obter_amostra()
+        todos_numeros = amostra.iloc[:, 2:17].values.flatten().tolist()
+        pares = sum(1 for num in todos_numeros if num % 2 == 0)
+        impares = len(todos_numeros) - pares
         
-        return media_movel
+        return {
+            'pares': (pares / len(todos_numeros)) * 100,
+            'impares': (impares / len(todos_numeros)) * 100
+        }
+
+    # ANÁLISE BÁSICA
+    def calcular_estatisticas_basicas(self) -> Dict:
+        """
+        Retorna estatísticas descritivas básicas dos números sorteados na amostra.
+        
+        Retorna:
+        Dict: Dicionário com diversas estatísticas
+        """
+        amostra = self._obter_amostra()
+        numeros = amostra.iloc[:, 2:17].values.flatten().tolist()
+        
+        return {
+            'numero_mais_frequente': Counter(numeros).most_common(1)[0][0],
+            'numero_menos_frequente': Counter(numeros).most_common()[-1][0],            
+            'maximo_sequencia': self._calcular_max_sequencia(),
+            'distribuicao_pares': self._calcular_distribuicao_pares(),
+            'media_soma': self.calcular_media_soma(),
+            'media_repeticao': self._calcular_media_repeticao(),
+            'frequencia_absoluta': dict(Counter(numeros)),
+        }
+
+    # ANÁLISE TEMPORAL
+    def calcular_media_soma(self) -> float:
+        """Calcula a média da soma dos números sorteados na amostra."""
+        amostra = self._obter_amostra()
+        return amostra.iloc[:, 2:17].sum(axis=1).mean()
+
+    def calcular_frequencia_relativa(self, periodo: int = 10) -> pd.DataFrame:
+        """
+        Calcula a frequência relativa dos números por período na amostra.
+        
+        Parâmetros:
+        periodo (int): Número de sorteios para agrupar
+        
+        Retorna:
+        pd.DataFrame: DataFrame com frequências relativas por período
+        """
+        amostra = self._obter_amostra()
+        grupos = [amostra[i:i+periodo] for i in range(0, len(amostra), periodo)]
+        resultados = []
+
+        for grupo in grupos:
+            numeros = grupo.iloc[:, 2:17].values.flatten()
+            freq = pd.Series(numeros).value_counts(normalize=True).to_dict()
+            resultados.append(freq)
+
+        return pd.DataFrame(resultados).fillna(0)
     
-    def plotar_barras_media_movel(self, coluna, janela):
-        num_sorteios = self.tamanho_amostra
-        # Seleciona os dados da coluna específica
-        dados_coluna1 = self.dados.iloc[:num_sorteios, coluna]
-        dados_coluna = dados_coluna1.iloc[::-1].reset_index(drop=True)
-
-        # Calcula a média móvel simples
-        media_movel = dados_coluna.rolling(window=janela).mean()
-
-        # Remove valores NaN antes de aplicar o arredondamento
-        media_movel_sem_nan = media_movel.dropna()
-
-        # Aplica o arredondamento personalizado
-        media_movel_arredondada = media_movel_sem_nan.apply(self.arredondar_customizado)
-
-        self.media_movel_barras_arredondada = media_movel_arredondada
-
-        # Configura o gráfico
-        plt.figure(figsize=(12, 6))
-
-        # Gráfico de barras para os números sorteados
-        plt.bar(dados_coluna.index, dados_coluna, label='Sorteios', color='lightblue')
-
-        # Linha para a média móvel simples
-        plt.plot(media_movel_arredondada.index, media_movel_arredondada, label='Média Móvel Simples', color='orange', linewidth=2)
-
-        # Títulos e legendas
-        plt.title(f'Gráfico de Barras e Média Móvel - Coluna {coluna - 1} (Média móvel simples de {janela} períodos.)')
-        plt.xlabel('Números Sorteados')
-        plt.ylabel('Valores')
-        plt.legend()
-        plt.grid(True)
-        plt.show()
-
-    def plotar_scatter_media_movel(self, coluna, janela):
-        num_sorteios = self.tamanho_amostra
-
-        # Seleciona os dados da coluna específica
-        dados_coluna1 = self.dados.iloc[:num_sorteios, coluna]
-        dados_coluna = dados_coluna1.iloc[::-1].reset_index(drop=True)
-
-        # Calcula a média móvel simples
-        media_movel = dados_coluna.rolling(window=janela).mean()
-
-        # Calcular a média móvel exponêncial
-        # media_movel = dados_coluna.ewm(span= janela, adjust=False).mean()
-
-        # Remove valores NaN antes de aplicar o arredondamento
-        media_movel_sem_nan = media_movel.dropna()
-
-        # Aplica o arredondamento personalizado
-        media_movel_arredondada = media_movel_sem_nan.apply(self.arredondar_customizado)
-
-        self.media_movel_scatter_arredondada = media_movel_arredondada
-
-        # Configura o gráfico
-        plt.figure(figsize=(12, 6))
-
-        # Gráfico de dispersão (scatter plot) para os números sorteados
-        plt.scatter(dados_coluna.index, dados_coluna, label='Sorteios', color='blue', s=100)
+    def _calcular_media_repeticao(self) -> float:
+        """
+        Calcula a média de números repetidos entre sorteios consecutivos.
         
-        sorteado = 0
+        Retorna:
+        float: Média de repetição entre sorteios.
+        """
+        amostra = self._obter_amostra()
+        repetidos = []
         
-        # Verifica e marca os pontos vermelhos onde o sorteio foi igual à média móvel anterior
-        for i in range(janela, len(dados_coluna)):
-            if dados_coluna.iloc[i] == media_movel_arredondada.iloc[i - janela]:
-                # Se o número sorteado for igual à média móvel do sorteio anterior, pinta de vermelho
-                plt.scatter(i, dados_coluna.iloc[i], color='red', s=100, label='Sorteio = Média Móvel' if i == 1 else "")
-                sorteado += 1
+        for i in range(1, len(amostra)):
+            numeros_anterior = set(amostra.iloc[i-1, 2:17]) # Números do sorteio anterior
+            numeros_atual = set(amostra.iloc[i, 2:17]) # Números do sorteio atual
+            repetidos.append(len(numeros_anterior.intersection (numeros_atual))) # Números repetidos
+        
+        return np.mean(repetidos)
+    
+    def calcular_intervalo_aparicoes(self) -> pd.DataFrame:
+        """
+        Calcula o intervalo médio entre aparições de cada número.
+        Corrige problemas de valores negativos e NaN.
+        
+        Retorna:
+        pd.DataFrame: DataFrame com números de 1 a 25 e estatísticas de intervalo
+        """
+        intervalos = {num: [] for num in range(1, 26)}
+        ultima_posicao = {num: None for num in range(1, 26)}
 
-        # Linha para a média móvel simples
-        plt.plot(media_movel_arredondada.index, media_movel_arredondada, label='Média Móvel Simples', color='orange', linewidth=2)
+        amostra = self._obter_amostra().sort_values(by=0, ascending=True)  # Ordenar por concurso CRESCENTE
 
-        # Colocar os números sorteados no eixo x
-        plt.xticks(ticks=dados_coluna.index, labels="")
+        for idx, row in amostra.iterrows():
+            concurso = row.iloc[0]  # Número do concurso (coluna 0)
+            for num in row.iloc[2:17]:  # Colunas dos números sorteados
+                if ultima_posicao[num] is not None:
+                    intervalo = concurso - ultima_posicao[num]  # Intervalo baseado em concursos
+                    intervalos[num].append(intervalo)
+                ultima_posicao[num] = concurso  # Atualizar última posição pelo número do concurso
 
-        # Força o eixo Y a mostrar apenas valores inteiros
-        plt.yticks(np.arange(dados_coluna.min(), dados_coluna.max() + 1, 1))
+        # Calcular última aparição corretamente
+        ultimo_concurso = amostra.iloc[-1, 0]  # Número do último concurso na amostra
+        ultima_aparicao = {
+            num: (ultimo_concurso - ultima_posicao[num] if ultima_posicao[num] is not None else np.nan)
+            for num in range(1, 26)
+        }
 
-        # Títulos e legendas
-        plt.title(f'Gráfico de Pontos e Média Móvel - Coluna {coluna - 1} (Média móvel simples de {janela} períodos.)')
-        plt.xlabel(f'Contagem números sorteados na média = {sorteado}\nRepresentando {float(sorteado/len(media_movel_arredondada)*100):.2f}% da amostra.')
-        plt.ylabel('Valores')
-        plt.legend()
-        plt.grid(True)
-        plt.show()
+        # DataFrame final
+        df = pd.DataFrame({
+            'numero': range(1, 26),
+            'media_intervalo': [np.mean(intervalos[num]) if intervalos[num] else np.nan for num in range(1, 26)],
+            'max_intervalo': [max(intervalos[num]) if intervalos[num] else np.nan for num in range(1, 26)],
+            'ultima_aparicao': [ultima_aparicao[num] for num in range(1, 26)]
+        }).set_index('numero')
 
-    def plotar_scatter_media_movel_dash(self, coluna, janela):
-        num_sorteios = self.tamanho_amostra
-        # Seleciona os dados da coluna específica
-        dados_coluna1 = self.dados.iloc[:num_sorteios, coluna]
-        dados_coluna = dados_coluna1.iloc[::-1].reset_index(drop=True)
+        return df
 
-        # Converter a coluna para valores numéricos, ignorando erros
-        dados_coluna = pd.to_numeric(dados_coluna, errors='coerce')
+    # ANÁLISE COMBINATÓRIA
+    def analisar_combinacoes(self, tamanho_grupo: int = 2) -> pd.DataFrame:
+        """
+        Analisa combinações de números de determinado tamanho na amostra.
+        
+        Parâmetros:
+        tamanho_grupo (int): Tamanho das combinações a analisar (2-4)
+        
+        Retorna:
+        pd.DataFrame: DataFrame com combinações e frequências
+        """
+        amostra = self._obter_amostra()
+        combinacoes = []
+        
+        for _, row in amostra.iterrows():
+            numeros = sorted(row.iloc[2:17])
+            combinacoes.extend(itertools.combinations(numeros, tamanho_grupo))
+            
+        freq = Counter(combinacoes)
+        df = pd.DataFrame.from_dict(freq, orient='index').reset_index()
+        df.columns = ['Combinacao', 'Frequencia']
+        return df.sort_values('Frequencia', ascending=False, ignore_index=True)
 
-        # Calcula a média móvel simples e arredonda os valores para inteiros
-        media_movel = dados_coluna.rolling(window=janela).mean().round(0)
+    # VISUALIZAÇÃO
+    def plot_heatmap_frequencia(self):
+        """
+        Gera heatmap interativo das frequências numéricas na amostra.
+        
+        Retorna:
+        go.Figure: Gráfico de heatmap interativo.
+        """
+        # Coletar dados de frequência
+        freq = self.calcular_estatisticas_basicas()['frequencia_absoluta']
+        
+        # Filtrar apenas os números de 1 a 25
+        nums = [num for num in range(1, 26)]  # Números de 1 a 25
+        counts = [freq.get(num, 0) for num in nums]  # Frequências correspondentes
 
-        # Cria o gráfico com Plotly
-        fig = go.Figure()
-
-        # Adiciona os dados originais como pontos
-        fig.add_trace(go.Scatter(
-            x=list(range(len(dados_coluna))),
-            y=dados_coluna,
-            mode='markers',
-            marker=dict(color='blue'),
-            name='Dados Originais'
+        # Criar o heatmap
+        fig = go.Figure(data=go.Heatmap(
+            z=[counts],  # Valores de frequência
+            x=nums,      # Números (1 a 25)
+            # Rótulo do eixo Y
+            colorscale='Ice',  # Opções de paletas de cores: 'Cividis', 'Inferno', 'Magma', 'Plasma', 'Turbo', 'Jet', 'Hot', 'Cool', 'Rainbow'. Mais em: https://plotly.com/python/builtin-colorscales/
+            colorbar=dict(title='Frequência'),
+            hoverinfo='x+z',  # Mostrar número e frequência ao passar o mouse
         ))
 
-        # Adiciona a média móvel como linha
-        fig.add_trace(go.Scatter(
-            x=list(range(len(media_movel))),
-            y=media_movel,
-            mode='lines',
-            name='Média Móvel'
-        ))
-
-        # Adiciona os pontos sorteados que estavam na média do sorteio passado
-        for i in range(1, len(dados_coluna)):
-            if dados_coluna[i] == media_movel[i-1]:
-                fig.add_trace(go.Scatter(
-                    x=[i],
-                    y=[dados_coluna[i]],
-                    mode='markers',
-                    marker=dict(color='red', size=10),
-                    name='Número Sorteado na Média'
-                ))
-
-        # Configurações adicionais do layout do gráfico
+        # Ajustar layout
         fig.update_layout(
-            title=f'Média Móvel Simples - Coluna {coluna}',
-            xaxis_title='Índice',
-            yaxis_title='Valor',
-            legend_title='Legenda',
-            yaxis=dict(tickformat="d"),  # Formato dos ticks do eixo y para mostrar apenas inteiros
-            showlegend=False  # Remove a legenda do gráfico
+            title='Mapa de Calor - Frequência dos Números (Lotofácil)',
+            xaxis_title='Números',
+            yaxis_title='',
+            xaxis=dict(tickmode='linear', dtick=1, showgrid=False),  # Mostrar todos os números no eixo X
+            yaxis=dict(showticklabels=False, showgrid=False),  # Ocultar rótulos do eixo Y
+            height=400,  # Ajustar altura do gráfico
+            width=800,   # Ajustar largura do gráfico
+            margin=dict(l=50, r=50, b=50, t=50),  # Margens
+            font=dict(size=14)  # Tamanho da fonte global
         )
 
+        media_frequencia = np.mean(counts)
+
+        # Adicionar anotações
+        for i, num in enumerate(nums):
+            fig.add_annotation(
+                x=num, y=0,  # Posição da anotação
+                text=str(counts[i]),  # Texto da anotação
+                showarrow=False,  # Sem seta
+                font=dict(
+                    size=12, 
+                    color='white' if counts[i] < media_frequencia else 'black' # Cor do texto
+                    )  
+            )
+
         return fig
+    
+    # UTILITÁRIOS
+    def exportar_para_csv(self, arquivo: str = 'analise_lotofacil.csv') -> None:
+        """Exporta dados básicos de análise para CSV"""
+        estatisticas = self.calcular_estatisticas_basicas()
+        pd.DataFrame.from_dict(estatisticas).to_csv(arquivo, index=False)
+
+    def gerar_relatorio(self) -> str:
+        """Gera um relatório textual resumido da análise"""
+        estatisticas = self.calcular_estatisticas_basicas()
+        relatorio = f"""
+        RELATÓRIO DE ANÁLISE - LOTOFÁCIL
+        ---------------------------------
+        Período analisado: {self.tamanho_amostra} sorteios
+        Número mais frequente: {estatisticas['numero_mais_frequente']}
+        Número menos frequente: {estatisticas['numero_menos_frequente']}
+        Média de repetição dos números entre sorteios: {estatisticas['media_repeticao']:.2f}
+        Maior sequência encontrada: {estatisticas['maximo_sequencia']}
+        Distribuição de pares e ímpares: {estatisticas['distribuicao_pares']['pares']:.2f}% pares, {estatisticas['distribuicao_pares']['impares']:.2f}% ímpares
+        Média da soma dos números sorteados: {estatisticas['media_soma']:.2f}
+        """
+        return relatorio
+    
+    def sugerir_aposta(self, peso_frequencia=0.4, peso_intervalo=0.3, peso_combinacoes=0.3) -> List[int]:
+        """
+        Sugere números para apostas combinando múltiplas métricas estatísticas.
+        
+        Parâmetros:
+        peso_frequencia (float): Peso para números mais frequentes (0-1)
+        peso_intervalo (float): Peso para números atrasados (0-1)
+        peso_combinacoes (float): Peso para combinações frequentes (0-1)
+        
+        Retorna:
+        List[int]: 15 números sugeridos ordenados
+        """
+        # Coletar dados
+        estatisticas = self.calcular_estatisticas_basicas()
+        intervalos = self.calcular_intervalo_aparicoes()
+        pares = self.analisar_combinacoes(tamanho_grupo=2)
+        trincas = self.analisar_combinacoes(tamanho_grupo=3)
+        max_seq = estatisticas['maximo_sequencia']
+
+        # 1. Score por frequência, intervalo e última aparição
+        scores = {}
+        for num in range(1, 26):
+            # Frequência normalizada
+            score_freq = estatisticas['frequencia_absoluta'].get(num, 0) / self.tamanho_amostra
+            
+            # Intervalo (tratar NaN)
+            media_intervalo = intervalos.loc[num, 'media_intervalo']
+            if pd.isna(media_intervalo):
+                score_intervalo = 0  # Números que apareceram apenas uma vez ou nunca
+            else:
+                score_intervalo = 1 / (media_intervalo + 1e-6)  # Evitar divisão por zero
+            
+            # Última aparição (quanto maior, mais "atrasado" o número está)
+            ultima_aparicao = intervalos.loc[num, 'ultima_aparicao']
+            if pd.isna(ultima_aparicao):
+                score_atraso = 0  # Números que nunca apareceram
+            else:
+                score_atraso = ultima_aparicao / self.tamanho_amostra  # Normalizar
+            
+            # Score total
+            scores[num] = (
+                (peso_frequencia * score_freq) +
+                (peso_intervalo * score_intervalo) +
+                (peso_intervalo * score_atraso)  # Adicionar peso para números atrasados
+            )
+
+        # 2. Adicionar peso de combinações
+        for row in pd.concat([pares, trincas]).head(10).itertuples(index=False):
+            combo = row.Combinacao  # Acessa a coluna 'Combinacao'
+            freq = row.Frequencia   # Acessa a coluna 'Frequencia'
+            for num in combo:
+                scores[num] += peso_combinacoes * freq
+
+        # 3. Seleção balanceada
+        top_numeros = sorted(scores, key=lambda x: scores[x], reverse=True)[:20]
+
+        # 4. Balancear pares/ímpares
+        distribuicao = estatisticas['distribuicao_pares']
+        num_pares = int(15 * (distribuicao['pares'] / 100))
+        num_impares = 15 - num_pares
+
+        # 5. Evitar sequências longas
+        candidatos = self._evitar_sequencias(top_numeros, max_seq)
+
+        # 6. Seleção final
+        pares = [n for n in candidatos if n % 2 == 0][:num_pares]
+        impares = [n for n in candidatos if n % 2 != 0][:num_impares]
+        selecao = pares + impares
+
+        # Completar se necessário
+        if len(selecao) < 15:
+            selecao += [n for n in top_numeros if n not in selecao][:15-len(selecao)]
+
+        return sorted(selecao[:15])
+
+    def _evitar_sequencias(self, numeros, max_seq):
+        """Filtra números para evitar sequências longas"""
+        numeros_ordenados = sorted(numeros)
+        sequencias = []
+        
+        # Identificar sequências
+        seq_atual = [numeros_ordenados[0]]
+        for num in numeros_ordenados[1:]:
+            if num == seq_atual[-1] + 1:
+                seq_atual.append(num)
+            else:
+                sequencias.append(seq_atual)
+                seq_atual = [num]
+        sequencias.append(seq_atual)
+        
+        # Remover sequências longas
+        filtrados = []
+        for seq in sequencias:
+            if len(seq) > max_seq:
+                filtrados.extend(seq[:max_seq])
+            else:
+                filtrados.extend(seq)
+        
+        return filtrados
