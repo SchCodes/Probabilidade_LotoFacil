@@ -214,4 +214,3 @@ print(f"Números sugeridos: {aposta_sugerida}")
 ---
 Agora você está pronto para usar a classe `AnaliseLotoFacil`!
 ---
-```
